@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text('My Cash Book'),
                 const SizedBox(height: 24),
                 TextFormField(
-                  key: const Key('myForm_usernameInput'),
+                  key: const Key('loginForm_usernameInput'),
                   controller: _usernameController,
                   decoration: const InputDecoration(
                     icon: Icon(Icons.person),
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textInputAction: TextInputAction.next,
                 ),
                 TextFormField(
-                  key: const Key('myForm_passwordInput'),
+                  key: const Key('loginForm_passwordInput'),
                   controller: _passwordController,
                   decoration: const InputDecoration(
                     icon: Icon(Icons.lock),
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const CircularProgressIndicator()
                 else
                   ElevatedButton(
-                    key: const Key('myForm_submit'),
+                    key: const Key('loginForm_submit'),
                     onPressed: _onSubmit,
                     child: const Text('Submit'),
                   ),

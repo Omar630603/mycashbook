@@ -27,7 +27,7 @@ class MainApp extends StatelessWidget {
         '/add_transaction': (context) => AddTransactionScreen(
             transactionType: ModalRoute.of(context)!.settings.arguments),
         '/history': (context) => const HistoryScreen(),
-        '/settings': (context) => const SettingScreen(),
+        '/settings': (context) => SettingScreen(),
         '/logout': (context) => welcomeScreen(context),
       },
     );
