@@ -1,10 +1,17 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:mycashbook/screens/login_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:mycashbook/services/authentication_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({
+    Key? key,
+    required this.authService,
+  }) : super(key: key);
   static const String routeName = '/home';
+  final AuthenticationService authService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -19,8 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, LoginScreen.routeName);
+            onPressed: () async {
+              await widget.authService.logout(); // Call logout function
+              Navigator.pushReplacementNamed(context, LoginScreen.routeName);
             },
             icon: const Icon(Icons.logout),
           ),

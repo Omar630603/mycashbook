@@ -1,11 +1,17 @@
-import 'dart:math';
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:formz/formz.dart';
+import 'package:mycashbook/services/authentication_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({super.key, Random? seed}) : seed = seed ?? Random();
+  const LoginScreen({
+    Key? key,
+    required this.authService,
+  }) : super(key: key);
+
   static const String routeName = '/login';
-  final Random seed;
+  final AuthenticationService authService;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -39,43 +45,63 @@ class _LoginScreenState extends State<LoginScreen> {
       _state = _state.copyWith(status: FormzSubmissionStatus.inProgress);
     });
 
+    await Future.delayed(const Duration(seconds: 2));
+
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
     try {
-      await _submitForm();
-      _state = _state.copyWith(status: FormzSubmissionStatus.success);
+      final loginResult = await widget.authService.login(username, password);
+
+      if (loginResult) {
+        // Login successful
+        _state = _state.copyWith(status: FormzSubmissionStatus.success);
+
+        FocusScope.of(context)
+          ..nextFocus()
+          ..unfocus();
+
+        const successSnackBar = SnackBar(
+          content: Text('Logged in successfully! 🎉'),
+        );
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(successSnackBar);
+
+        _resetForm();
+
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false,
+        );
+      } else {
+        // Login failed
+        _state = _state.copyWith(status: FormzSubmissionStatus.failure);
+
+        const failureSnackBar = SnackBar(
+          content: Text('Login failed. Please check your credentials. 🚨'),
+        );
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(failureSnackBar);
+      }
     } catch (_) {
       _state = _state.copyWith(status: FormzSubmissionStatus.failure);
+
+      const failureSnackBar = SnackBar(
+        content: Text('Something went wrong... 🚨'),
+      );
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(failureSnackBar);
     }
 
     if (!mounted) return;
 
     setState(() {});
-
-    FocusScope.of(context)
-      ..nextFocus()
-      ..unfocus();
-
-    const successSnackBar = SnackBar(
-      content: Text('Logged in successfully! 🎉'),
-    );
-    const failureSnackBar = SnackBar(
-      content: Text('Something went wrong... 🚨'),
-    );
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        _state.status.isSuccess ? successSnackBar : failureSnackBar,
-      );
-
-    if (_state.status.isSuccess) {
-      _resetForm();
-      Navigator.of(context).pushNamed('/home');
-    }
-  }
-
-  Future<void> _submitForm() async {
-    await Future<void>.delayed(const Duration(seconds: 1));
-    if (widget.seed.nextInt(2) == 0) throw Exception();
   }
 
   void _resetForm() {
