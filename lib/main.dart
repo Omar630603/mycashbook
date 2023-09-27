@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mycashbook/screens/history.dart';
 import 'package:mycashbook/screens/home_screen.dart';
 import 'package:mycashbook/screens/login_screen.dart';
@@ -11,7 +11,7 @@ import 'package:mycashbook/services/data_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
+  // await dotenv.load();
 
   final databaseHelper = HiveDatabaseHelper();
   await databaseHelper.initDatabase();
@@ -19,10 +19,12 @@ Future<void> main() async {
   final authService = AuthenticationService(databaseHelper);
   final dataService = DataService(databaseHelper);
   final isLoggedIn = await authService.isUserLoggedIn();
-  runApp(MainApp(
-      authService: authService,
-      dataService: dataService,
-      isLoggedIn: isLoggedIn));
+  runApp(
+    MainApp(
+        authService: authService,
+        dataService: dataService,
+        isLoggedIn: isLoggedIn),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -48,12 +50,13 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => WelcomeScreen(isLoggedIn: isLoggedIn),
         '/login': (context) => LoginScreen(authService: authService),
-        '/home': (context) => HomeScreen(authService: authService),
+        '/home': (context) =>
+            HomeScreen(authService: authService, dataService: dataService),
         '/add_transaction': (context) => AddTransactionScreen(
               transactionType: ModalRoute.of(context)!.settings.arguments,
               dataService: dataService,
             ),
-        '/history': (context) => const HistoryScreen(),
+        '/history': (context) => HistoryScreen(dataService: dataService),
         '/settings': (context) => SettingScreen(),
       },
     );

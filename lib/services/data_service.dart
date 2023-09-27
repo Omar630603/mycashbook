@@ -18,4 +18,8 @@ class DataService {
     await _databaseHelper.addTransaction(transaction);
     return true;
   }
+
+  Future<List<Transaction>> getTransactions() async {
+    return await _databaseHelper.getTransactions();
+  }
 }

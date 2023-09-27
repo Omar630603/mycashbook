@@ -105,6 +105,12 @@ class _SettingScreenState extends State<SettingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+          icon: const Icon(Icons.home),
+        ),
         title: const Text('Settings'),
       ),
       body: Padding(
@@ -168,8 +174,12 @@ class _SettingScreenState extends State<SettingScreen> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
+                // rounded corners
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[200],
+                ),
                 padding: const EdgeInsets.all(16),
-                color: Colors.grey[200],
                 child: const Row(
                   children: [
                     CircleAvatar(

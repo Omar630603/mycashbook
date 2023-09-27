@@ -71,11 +71,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       amount = amount.replaceAll('.', '');
       int formattedAmount = int.parse(amount);
 
+      if (widget.transactionType == null) {
+        throw Exception('Transaction type is null');
+      }
+
       final transactionAdded = await widget.dataService.addTransaction(
         formattedDate,
         formattedAmount,
         _state.description.value,
-        _state.transactionType.value,
+        widget.transactionType,
       );
 
       if (transactionAdded) {
@@ -149,6 +153,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+          icon: const Icon(Icons.home),
+        ),
         title: Text('Add ${widget.transactionType} Transaction'),
       ),
       body: Padding(

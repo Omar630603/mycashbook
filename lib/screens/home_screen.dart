@@ -1,23 +1,39 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:mycashbook/screens/login_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:mycashbook/models/transaction.dart';
+import 'package:mycashbook/screens/login_screen.dart';
 import 'package:mycashbook/services/authentication_service.dart';
+import 'package:mycashbook/services/data_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     Key? key,
     required this.authService,
+    required this.dataService,
   }) : super(key: key);
+
   static const String routeName = '/home';
   final AuthenticationService authService;
+  final DataService dataService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Transaction>> transactions = Future.value([]);
+
+  @override
+  void initState() {
+    super.initState();
+    transactions = widget.dataService.getTransactions().whenComplete(() {
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             onPressed: () async {
-              await widget.authService.logout(); // Call logout function
+              await widget.authService.logout();
               Navigator.pushReplacementNamed(context, LoginScreen.routeName);
             },
             icon: const Icon(Icons.logout),
@@ -38,8 +54,68 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Center(
           child: Column(
             children: [
-              _summaryContainer(),
-              _chartContainer(),
+              FutureBuilder<List<Transaction>>(
+                future: transactions,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error,
+                              size: 100,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 20),
+                            Text(
+                              'Error loading transactions',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else if (!snapshot.hasData ||
+                      snapshot.data == null ||
+                      snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 100,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 20),
+                            Text(
+                              'No transactions yet',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    final transactionData = snapshot.data!;
+                    return Column(
+                      children: [
+                        _summaryContainer(transactionData),
+                        _chartContainer(transactionData),
+                      ],
+                    );
+                  }
+                },
+              ),
               _gridMenuContainer(),
             ],
           ),
@@ -48,7 +124,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _summaryContainer() {
+  Widget _summaryContainer(List<Transaction> transactions) {
+    double totalIncome = 0.0;
+    double totalExpense = 0.0;
+
+    for (final transaction in transactions) {
+      if (transaction.type == 'Income') {
+        totalIncome += transaction.amount;
+      } else {
+        totalExpense += transaction.amount;
+      }
+    }
+
+    String totalIncomeString = NumberFormat.currency(
+      locale: 'id',
+      symbol: 'Rp. ',
+      decimalDigits: 0,
+    ).format(totalIncome);
+    String totalExpenseString = NumberFormat.currency(
+      locale: 'id',
+      symbol: 'Rp. ',
+      decimalDigits: 0,
+    ).format(totalExpense);
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Container(
@@ -64,38 +162,38 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(24),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Total Income',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Rp 500000',
-                style: TextStyle(
+                totalIncomeString,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 24),
-              Text(
+              const SizedBox(height: 24),
+              const Text(
                 'Total Expense',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Rp 80000',
-                style: TextStyle(
+                totalExpenseString,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -107,7 +205,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _chartContainer() {
+  Widget _chartContainer(List<Transaction> transactions) {
+    final List<FlSpot> incomeSpots = [];
+    final List<FlSpot> expenseSpots = [];
+
+    for (final transaction in transactions) {
+      if (transaction.type == 'Income') {
+        incomeSpots.add(FlSpot(
+          transaction.date.millisecondsSinceEpoch.toDouble(),
+          transaction.amount.toDouble(),
+        ));
+      } else {
+        expenseSpots.add(FlSpot(
+          transaction.date.millisecondsSinceEpoch.toDouble(),
+          transaction.amount.toDouble(),
+        ));
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
@@ -135,13 +250,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
                   ),
                 ),
-                gridData: const FlGridData(show: false),
+                gridData: const FlGridData(show: true),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: 1,
                       getTitlesWidget: bottomTitleWidgets,
                     ),
                   ),
@@ -155,8 +268,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     sideTitles: SideTitles(
                       getTitlesWidget: leftTitleWidgets,
                       showTitles: true,
-                      interval: 1,
-                      reservedSize: 40,
                     ),
                   ),
                 ),
@@ -169,9 +280,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             .primary
                             .withOpacity(0.2),
                         width: 4),
-                    left: const BorderSide(color: Colors.transparent),
-                    right: const BorderSide(color: Colors.transparent),
-                    top: const BorderSide(color: Colors.transparent),
+                    left: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.2),
+                        width: 4),
+                    right: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.2),
+                        width: 4),
+                    top: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.2),
+                        width: 4),
                   ),
                 ),
                 lineBarsData: [
@@ -182,15 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(show: false),
-                    spots: const [
-                      FlSpot(1, 1),
-                      FlSpot(3, 1.5),
-                      FlSpot(5, 1.4),
-                      FlSpot(7, 3.4),
-                      FlSpot(10, 2),
-                      FlSpot(12, 2.2),
-                      FlSpot(13, 1.8),
-                    ],
+                    spots: incomeSpots,
                   ),
                   LineChartBarData(
                     isCurved: true,
@@ -202,20 +320,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       show: false,
                       color: Colors.pink.withOpacity(0),
                     ),
-                    spots: const [
-                      FlSpot(1, 1),
-                      FlSpot(3, 2.8),
-                      FlSpot(7, 1.2),
-                      FlSpot(10, 2.8),
-                      FlSpot(12, 2.6),
-                      FlSpot(13, 3.9),
-                    ],
+                    spots: expenseSpots,
                   ),
                 ],
-                minX: 0,
-                maxX: 14,
-                maxY: 4,
-                minY: 0,
+                minX: _getMinX(transactions),
+                maxX: _getMaxX(transactions),
+                minY: _getMinY(transactions),
+                maxY: _getMaxY(transactions),
               ),
               duration: const Duration(milliseconds: 250),
             ),
@@ -228,23 +339,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
-      fontSize: 16,
+      fontSize: 8,
     );
     Widget text;
-    switch (value.toInt()) {
-      case 2:
-        text = const Text('SEPT', style: style);
-        break;
-      case 7:
-        text = const Text('OCT', style: style);
-        break;
-      case 12:
-        text = const Text('DEC', style: style);
-        break;
-      default:
-        text = const Text('');
-        break;
-    }
+
+    String formattedDate = DateFormat('dd/MMM')
+        .format(DateTime.fromMillisecondsSinceEpoch(value.toInt()));
+
+    text = Text(
+      formattedDate,
+      style: style,
+      textAlign: TextAlign.center,
+    );
 
     return SideTitleWidget(
       axisSide: meta.axisSide,
@@ -256,30 +362,77 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget leftTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
-      fontSize: 14,
+      fontSize: 8,
     );
     String text;
-    switch (value.toInt()) {
-      case 1:
-        text = '1m';
-        break;
-      case 2:
-        text = '2m';
-        break;
-      case 3:
-        text = '3m';
-        break;
-      case 4:
-        text = '5m';
-        break;
-      case 5:
-        text = '6m';
-        break;
-      default:
-        return Container();
+
+    if (value >= 1000000000) {
+      text = '${NumberFormat.compactCurrency(
+        locale: 'id',
+        symbol: 'Rp. ',
+        decimalDigits: 0,
+      ).format(value / 1000000000)}B';
+    } else if (value >= 1000000) {
+      text = '${NumberFormat.compactCurrency(
+        locale: 'id',
+        symbol: 'Rp. ',
+        decimalDigits: 0,
+      ).format(value / 1000000)}M';
+    } else if (value >= 1000) {
+      text = '${NumberFormat.compactCurrency(
+        locale: 'id',
+        symbol: 'Rp. ',
+        decimalDigits: 0,
+      ).format(value / 1000)}K';
+    } else {
+      text = NumberFormat.compactCurrency(
+        locale: 'id',
+        symbol: 'Rp. ',
+        decimalDigits: 0,
+      ).format(value);
     }
 
     return Text(text, style: style, textAlign: TextAlign.center);
+  }
+
+  double _getMaxX(List<Transaction> transactions) {
+    double max = 0;
+    for (final transaction in transactions) {
+      if (transaction.date.millisecondsSinceEpoch.toDouble() > max) {
+        max = transaction.date.millisecondsSinceEpoch.toDouble();
+      }
+    }
+    return max;
+  }
+
+  double _getMinX(List<Transaction> transactions) {
+    double min = double.infinity;
+    for (final transaction in transactions) {
+      if (transaction.date.millisecondsSinceEpoch.toDouble() < min) {
+        min = transaction.date.millisecondsSinceEpoch.toDouble();
+      }
+    }
+    return min;
+  }
+
+  double _getMaxY(List<Transaction> transactions) {
+    double max = 0;
+    for (final transaction in transactions) {
+      if (transaction.amount.toDouble() > max) {
+        max = transaction.amount.toDouble();
+      }
+    }
+    return max;
+  }
+
+  double _getMinY(List<Transaction> transactions) {
+    double min = double.infinity;
+    for (final transaction in transactions) {
+      if (transaction.amount.toDouble() < min) {
+        min = transaction.amount.toDouble();
+      }
+    }
+    return min;
   }
 
   Widget _gridMenuContainer() {

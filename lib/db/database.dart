@@ -2,7 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mycashbook/models/user.dart';
 import 'package:mycashbook/models/transaction.dart';
 import 'package:bcrypt/bcrypt.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class HiveDatabaseHelper {
   static const String _userBoxName = 'userBox';
@@ -16,11 +16,11 @@ class HiveDatabaseHelper {
     final box = await Hive.openBox<User>(_userBoxName);
     if (box.isEmpty) {
       // Load user data from environment variables
-      final usernameFromEnv = dotenv.env['USERNAME'] ?? 'defaultUser';
-      final passwordFromEnv = dotenv.env['PASSWORD'] ?? 'defaultPassword';
+      // final usernameFromEnv = dotenv.env['USERNAME'] ?? 'defaultUser';
+      // final passwordFromEnv = dotenv.env['PASSWORD'] ?? 'defaultPassword';
 
-      // const usernameFromEnv = 'user';
-      // const passwordFromEnv = '123456789';
+      const usernameFromEnv = 'user';
+      const passwordFromEnv = '123456789';
 
       // Encrypt the password
       final String passwordHashed = BCrypt.hashpw(
@@ -48,7 +48,21 @@ class HiveDatabaseHelper {
     await box.add(transaction);
   }
 
+  Future<List<Transaction>> getTransactions() async {
+    final box = await Hive.openBox<Transaction>(_transactionBoxName);
+    final transactions = box.values.toList();
+
+    transactions.sort((a, b) => a.date.compareTo(b.date));
+
+    return transactions;
+  }
+
   Future<void> close() async {
     await Hive.close();
+  }
+
+  Future<void> deleteAll() async {
+    await Hive.deleteBoxFromDisk(_userBoxName);
+    await Hive.deleteBoxFromDisk(_transactionBoxName);
   }
 }
