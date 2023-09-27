@@ -1,16 +1,17 @@
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
+import 'package:mycashbook/services/data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:formz/formz.dart';
 import 'package:intl/intl.dart';
-import 'dart:math';
 
 class AddTransactionScreen extends StatefulWidget {
-  AddTransactionScreen({super.key, Random? seed, required this.transactionType})
-      : seed = seed ?? Random();
-
+  const AddTransactionScreen({
+    Key? key,
+    required this.transactionType,
+    required this.dataService,
+  }) : super(key: key);
   static const String routeName = '/add_transaction';
-
-  final Random seed;
+  final DataService dataService;
   // ignore: prefer_typing_uninitialized_variables
   final transactionType;
 
@@ -46,16 +47,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
-  Future onSubmit() async {
+  void _onTransactionTypeChanged() {
+    setState(() {
+      _state = _state.copyWith(
+        transactionType: TransactionType.dirty(_transactionTypeController.text),
+      );
+    });
+  }
+
+  Future<void> onSubmit() async {
     if (!_key.currentState!.validate()) return;
 
     setState(() {
       _state = _state.copyWith(status: FormzSubmissionStatus.inProgress);
     });
 
+    await Future.delayed(const Duration(seconds: 2));
+
     try {
-      await submitForm();
-      _state = _state.copyWith(status: FormzSubmissionStatus.success);
+      DateTime formattedDate =
+          DateFormat('dd MMM yyyy').parse(_state.date.value);
+      String amount = _state.amount.value.replaceAll('Rp. ', '');
+      amount = amount.replaceAll('.', '');
+      int formattedAmount = int.parse(amount);
+
+      final transactionAdded = await widget.dataService.addTransaction(
+        formattedDate,
+        formattedAmount,
+        _state.description.value,
+        _state.transactionType.value,
+      );
+
+      if (transactionAdded) {
+        _state = _state.copyWith(status: FormzSubmissionStatus.success);
+      } else {
+        _state = _state.copyWith(status: FormzSubmissionStatus.failure);
+      }
     } catch (_) {
       _state = _state.copyWith(status: FormzSubmissionStatus.failure);
     }
@@ -84,16 +111,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (_state.status.isSuccess) _resetForm();
   }
 
-  Future submitForm() async {
-    await Future<void>.delayed(const Duration(seconds: 1));
-    if (widget.seed.nextInt(2) == 0) throw Exception();
-  }
-
   void _resetForm() {
     _key.currentState!.reset();
     _dateController.clear();
     _amountController.clear();
     _descriptionController.clear();
+    _transactionTypeController.text = widget.transactionType;
     setState(() => _state = AddTransactionFormState());
   }
 
@@ -109,7 +132,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         TextEditingController(text: _state.description.value)
           ..addListener(_onDescriptionChanged);
     _transactionTypeController =
-        TextEditingController(text: widget.transactionType);
+        TextEditingController(text: widget.transactionType)
+          ..addListener(_onTransactionTypeChanged);
   }
 
   @override
@@ -142,6 +166,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     labelText: 'Transaction Type',
                     border: OutlineInputBorder(),
                   ),
+                  validator: (value) =>
+                      _state.transactionType.validator(value ?? '')?.text(),
+                  textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -183,6 +210,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 TextFormField(
                   key: const Key('addTransaction_amountInput'),
                   controller: _amountController,
+                  keyboardType: TextInputType.number,
                   inputFormatters: [
                     CurrencyTextInputFormatter(
                       locale: 'id',
@@ -217,19 +245,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
+                    if (_state.status.isInProgress)
+                      const CircularProgressIndicator()
+                    else
+                      ElevatedButton(
+                        key: const Key('addTransactionForm_submit'),
+                        onPressed: onSubmit,
+                        child: const Text('Submit'),
+                      ),
                     ElevatedButton(
-                      onPressed: _state.status.isInProgress ? null : onSubmit,
-                      child: const Text('Submit'),
-                    ),
-                    ElevatedButton(
-                        onPressed:
-                            _state.status.isInProgress ? null : _resetForm,
-                        style: ButtonStyle(
-                          backgroundColor: MaterialStateProperty.all<Color>(
-                            Colors.redAccent,
-                          ),
+                      onPressed: _state.status.isInProgress ? null : _resetForm,
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all<Color>(
+                          Colors.redAccent,
                         ),
-                        child: const Text(' Reset ')),
+                      ),
+                      child: const Text(' Reset '),
+                    ),
                   ],
                 )
               ],
@@ -238,6 +270,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
       ),
     );
+  }
+}
+
+enum TransactionTypeValidationError { invalid, empty }
+
+class TransactionType extends FormzInput<String, TransactionTypeValidationError>
+    with FormzInputErrorCacheMixin {
+  TransactionType.pure([super.value = '']) : super.pure();
+
+  TransactionType.dirty([super.value = '']) : super.dirty();
+
+  @override
+  TransactionTypeValidationError? validator(String value) {
+    if (value.isEmpty) {
+      return TransactionTypeValidationError.empty;
+    }
+    if (value != 'Income' && value != 'Expense') {
+      return TransactionTypeValidationError.invalid;
+    }
+
+    return null;
   }
 }
 
@@ -264,6 +317,32 @@ class Date extends FormzInput<String, DateValidationError>
   }
 }
 
+enum AmountValidationError { invalid, empty }
+
+class Amount extends FormzInput<String, AmountValidationError>
+    with FormzInputErrorCacheMixin {
+  Amount.pure([super.value = '']) : super.pure();
+
+  Amount.dirty([super.value = '']) : super.dirty();
+
+  @override
+  AmountValidationError? validator(String value) {
+    if (value.isEmpty) {
+      return AmountValidationError.empty;
+    }
+
+    try {
+      value = value.replaceAll('Rp. ', '');
+      value = value.replaceAll('.', '');
+      double.parse(value);
+    } catch (e) {
+      return AmountValidationError.invalid;
+    }
+
+    return null;
+  }
+}
+
 enum DescriptionValidationError { invalid, empty }
 
 class Description extends FormzInput<String, DescriptionValidationError>
@@ -284,62 +363,43 @@ class Description extends FormzInput<String, DescriptionValidationError>
   }
 }
 
-enum AmountValidationError { invalid, empty }
-
-class Amount extends FormzInput<String, AmountValidationError>
-    with FormzInputErrorCacheMixin {
-  Amount.pure([super.value = '']) : super.pure();
-
-  Amount.dirty([super.value = '']) : super.dirty();
-
-  @override
-  AmountValidationError? validator(String value) {
-    if (value.isEmpty) {
-      return AmountValidationError.empty;
-    }
-
-    try {
-      value = value.replaceAll('Rp. ', '');
-      double.parse(value);
-    } catch (e) {
-      return AmountValidationError.invalid;
-    }
-
-    return null;
-  }
-}
-
 class AddTransactionFormState with FormzMixin {
   AddTransactionFormState({
     Date? date,
     Amount? amount,
     Description? description,
+    TransactionType? transactionType,
     this.status = FormzSubmissionStatus.initial,
   })  : date = date ?? Date.pure(),
         amount = amount ?? Amount.pure(),
-        description = description ?? Description.pure();
+        description = description ?? Description.pure(),
+        transactionType = transactionType ?? TransactionType.pure();
 
   final Date date;
   final Amount amount;
   final Description description;
+  final TransactionType transactionType;
   final FormzSubmissionStatus status;
 
   AddTransactionFormState copyWith({
     Date? date,
     Amount? amount,
     Description? description,
+    TransactionType? transactionType,
     FormzSubmissionStatus? status,
   }) {
     return AddTransactionFormState(
       date: date ?? this.date,
       amount: amount ?? this.amount,
       description: description ?? this.description,
+      transactionType: transactionType ?? this.transactionType,
       status: status ?? this.status,
     );
   }
 
   @override
-  List<FormzInput<dynamic, dynamic>> get inputs => [date, amount, description];
+  List<FormzInput<dynamic, dynamic>> get inputs =>
+      [date, amount, description, transactionType];
 }
 
 extension on DateValidationError {
@@ -368,9 +428,20 @@ extension on DescriptionValidationError {
   String text() {
     switch (this) {
       case DescriptionValidationError.invalid:
-        return 'Invalid description';
+        return 'Invalid description, minimum 3 characters';
       case DescriptionValidationError.empty:
         return 'Please enter a description, minimum 3 characters';
+    }
+  }
+}
+
+extension on TransactionTypeValidationError {
+  String text() {
+    switch (this) {
+      case TransactionTypeValidationError.invalid:
+        return 'Invalid transaction type';
+      case TransactionTypeValidationError.empty:
+        return 'Please enter a transaction type';
     }
   }
 }

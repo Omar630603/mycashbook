@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               SizedBox(height: 24),
               Text(
-                'Total Outcome',
+                'Total Expense',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -317,12 +317,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _gridMenuItem(
                 icon: Icons.remove,
-                label: 'Outcome',
+                label: 'Expense',
                 color: Colors.pink,
                 onTap: () => Navigator.pushNamed(
                   context,
                   '/add_transaction',
-                  arguments: 'Outcome',
+                  arguments: 'Expense',
                 ),
               ),
               _gridMenuItem(

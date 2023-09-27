@@ -7,6 +7,7 @@ import 'package:mycashbook/screens/add_transaction_screen.dart';
 import 'package:mycashbook/screens/setting_screen.dart';
 import 'package:mycashbook/services/authentication_service.dart';
 import 'package:mycashbook/db/database.dart';
+import 'package:mycashbook/services/data_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,14 +17,23 @@ Future<void> main() async {
   await databaseHelper.initDatabase();
 
   final authService = AuthenticationService(databaseHelper);
+  final dataService = DataService(databaseHelper);
   final isLoggedIn = await authService.isUserLoggedIn();
-  runApp(MainApp(authService: authService, isLoggedIn: isLoggedIn));
+  runApp(MainApp(
+      authService: authService,
+      dataService: dataService,
+      isLoggedIn: isLoggedIn));
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({Key? key, required this.authService, required this.isLoggedIn})
+  const MainApp(
+      {Key? key,
+      required this.authService,
+      required this.dataService,
+      required this.isLoggedIn})
       : super(key: key);
   final AuthenticationService authService;
+  final DataService dataService;
   final bool isLoggedIn;
 
   @override
@@ -41,6 +51,7 @@ class MainApp extends StatelessWidget {
         '/home': (context) => HomeScreen(authService: authService),
         '/add_transaction': (context) => AddTransactionScreen(
               transactionType: ModalRoute.of(context)!.settings.arguments,
+              dataService: dataService,
             ),
         '/history': (context) => const HistoryScreen(),
         '/settings': (context) => SettingScreen(),
