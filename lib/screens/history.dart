@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:mycashbook/models/transaction.dart';
 import 'package:mycashbook/services/data_service.dart';
@@ -86,6 +88,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     amount: amount,
                     description: transaction.description,
                     isIncome: transaction.type == 'Income',
+                    dataService: widget.dataService,
                   );
                 },
               ),
@@ -100,6 +103,7 @@ class TransactionItem extends StatelessWidget {
   final String amount;
   final String description;
   final bool isIncome;
+  final DataService dataService;
 
   const TransactionItem({
     Key? key,
@@ -108,6 +112,7 @@ class TransactionItem extends StatelessWidget {
     required this.amount,
     required this.description,
     required this.isIncome,
+    required this.dataService,
   }) : super(key: key);
 
   @override
@@ -121,7 +126,7 @@ class TransactionItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Dismissible(
-          key: Key(description),
+          key: Key(id.toString()),
           background: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -140,11 +145,46 @@ class TransactionItem extends StatelessWidget {
             padding: const EdgeInsets.only(right: 20),
             child: const Icon(Icons.edit, color: Colors.white),
           ),
-          onDismissed: (direction) {
+          confirmDismiss: (direction) async {
             if (direction == DismissDirection.startToEnd) {
-              // Handle delete action here
+              // Show delete confirmation dialog
+              return await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('Delete Transaction'),
+                    content: const Text(
+                      'Are you sure you want to delete this transaction?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          await dataService.deleteTransaction(id);
+                          Navigator.of(context).pop(true);
+                        },
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  );
+                },
+              );
             } else if (direction == DismissDirection.endToStart) {
               // Handle edit action here
+              // Return false to prevent immediate dismissal
+              return false;
+            }
+            // Return false by default to prevent immediate dismissal
+            return false;
+          },
+          onDismissed: (direction) {
+            if (direction == DismissDirection.endToStart) {
+              // Handle edit action here after confirmation
             }
           },
           child: ListTile(

@@ -22,13 +22,11 @@ class HiveDatabaseHelper {
       const usernameFromEnv = 'user';
       const passwordFromEnv = '123456789';
 
-      // Encrypt the password
       final String passwordHashed = BCrypt.hashpw(
         passwordFromEnv,
         BCrypt.gensalt(),
       );
 
-      // Create a User object and store it in the box
       final user = User(username: usernameFromEnv, password: passwordHashed);
       await box.add(user);
     }
@@ -43,6 +41,19 @@ class HiveDatabaseHelper {
     return null;
   }
 
+  Future<bool> updateUserPassword(
+      String username, String passwordHashed) async {
+    final box = await Hive.openBox<User>(_userBoxName);
+    final users = box.values.where((user) => user.username == username);
+    if (users.isNotEmpty) {
+      final int index = box.values.toList().indexOf(users.first);
+      final user = User(username: username, password: passwordHashed);
+      await box.putAt(index, user);
+      return true;
+    }
+    return false;
+  }
+
   Future<void> addTransaction(Transaction transaction) async {
     final box = await Hive.openBox<Transaction>(_transactionBoxName);
     await box.add(transaction);
@@ -55,6 +66,16 @@ class HiveDatabaseHelper {
     transactions.sort((a, b) => a.date.compareTo(b.date));
 
     return transactions;
+  }
+
+  Future<void> deleteTransaction(int id) async {
+    final box = await Hive.openBox<Transaction>(_transactionBoxName);
+    final transactions =
+        box.values.where((transaction) => transaction.id == id);
+    if (transactions.isNotEmpty) {
+      final int index = box.values.toList().indexOf(transactions.first);
+      await box.deleteAt(index);
+    }
   }
 
   Future<void> close() async {

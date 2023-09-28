@@ -1,17 +1,43 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:formz/formz.dart';
+import 'package:mycashbook/models/user.dart';
+import 'package:mycashbook/services/authentication_service.dart';
 
 class SettingScreen extends StatefulWidget {
-  SettingScreen({super.key, Random? seed}) : seed = seed ?? Random();
+  const SettingScreen({
+    Key? key,
+    required this.authService,
+  }) : super(key: key);
   static const String routeName = '/settings';
-  final Random seed;
+  final AuthenticationService authService;
 
   @override
   State<SettingScreen> createState() => _SettingScreenState();
 }
 
 class _SettingScreenState extends State<SettingScreen> {
+  late User user = User(username: '', password: '');
+  late bool _isFormEnabled = false;
+
+  Future<void> loadUser() async {
+    try {
+      final loadedUser = await widget.authService.getCurrentUser();
+      if (loadedUser != null) {
+        setState(() {
+          user = loadedUser;
+          _isFormEnabled = true;
+        });
+      } else {
+        // disable the form
+        setState(() {
+          _isFormEnabled = false;
+        });
+      }
+    } catch (e) {
+      // Handle error loading transactions
+    }
+  }
+
   final _key = GlobalKey<FormState>();
   late ChangePasswordFormState _state;
   late final TextEditingController _oldPasswordController;
@@ -39,11 +65,16 @@ class _SettingScreenState extends State<SettingScreen> {
       _state = _state.copyWith(status: FormzSubmissionStatus.inProgress);
     });
 
+    late String passwordWrongMessage = '';
+
     try {
       await _submitForm();
       _state = _state.copyWith(status: FormzSubmissionStatus.success);
-    } catch (_) {
+    } catch (e) {
       _state = _state.copyWith(status: FormzSubmissionStatus.failure);
+      if (e.toString().contains('Wrong password')) {
+        passwordWrongMessage = 'Old password is wrong';
+      }
     }
 
     if (!mounted) return;
@@ -57,8 +88,9 @@ class _SettingScreenState extends State<SettingScreen> {
     const successSnackBar = SnackBar(
       content: Text('Password changed successfully! 🎉'),
     );
-    const failureSnackBar = SnackBar(
-      content: Text('Password change failed! 😢'),
+
+    SnackBar failureSnackBar = SnackBar(
+      content: Text('Failed to change password! 😢 $passwordWrongMessage'),
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -71,8 +103,37 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Future<void> _submitForm() async {
+    final username = user.username;
+    final oldPassword = _oldPasswordController.text;
+    final newPassword = _newPasswordController.text;
+
+    final checkPasswordResult =
+        await widget.authService.checkUserPassword(username, oldPassword);
+
+    if (!checkPasswordResult) {
+      setState(() {
+        _state = _state.copyWith(
+          oldPassword: OldPassword.dirty(_oldPasswordController.text),
+          status: FormzSubmissionStatus.failure,
+        );
+      });
+      throw Exception('Wrong password');
+    }
+
+    final changePasswordResult =
+        await widget.authService.changePassword(username, newPassword);
+
+    if (!changePasswordResult) {
+      setState(() {
+        _state = _state.copyWith(
+          newPassword: NewPassword.dirty(_newPasswordController.text),
+          status: FormzSubmissionStatus.failure,
+        );
+      });
+      throw Exception('Failed to change password');
+    }
+
     await Future<void>.delayed(const Duration(seconds: 1));
-    if (widget.seed.nextInt(2) == 0) throw Exception();
   }
 
   void _resetForm() {
@@ -92,6 +153,9 @@ class _SettingScreenState extends State<SettingScreen> {
     _newPasswordController =
         TextEditingController(text: _state.newPassword.value)
           ..addListener(_onNewPasswordChanged);
+    loadUser().whenComplete(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -167,7 +231,12 @@ class _SettingScreenState extends State<SettingScreen> {
                     else
                       ElevatedButton(
                         key: const Key('changePasswordForm_submit'),
-                        onPressed: _onSubmit,
+                        onPressed: _isFormEnabled ? _onSubmit : null,
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            _isFormEnabled ? Colors.yellow : Colors.grey,
+                          ),
+                        ),
                         child: const Text('Change Password'),
                       ),
                   ],
@@ -248,6 +317,8 @@ class OldPassword extends FormzInput<String, OldPasswordValidationError> {
   OldPasswordValidationError? validator(String value) {
     if (value.isEmpty) {
       return OldPasswordValidationError.empty;
+    } else if (value.length < 8) {
+      return OldPasswordValidationError.invalid;
     }
     return null;
   }
@@ -264,6 +335,8 @@ class NewPassword extends FormzInput<String, NewPasswordValidationError> {
   NewPasswordValidationError? validator(String value) {
     if (value.isEmpty) {
       return NewPasswordValidationError.empty;
+    } else if (value.length < 8) {
+      return NewPasswordValidationError.invalid;
     }
     return null;
   }
@@ -273,7 +346,7 @@ extension on OldPasswordValidationError {
   String text() {
     switch (this) {
       case OldPasswordValidationError.invalid:
-        return 'Old Invalid password';
+        return 'Old Invalid password, must be at least 8 characters';
       case OldPasswordValidationError.empty:
         return 'Old Password is required';
     }
@@ -284,7 +357,7 @@ extension on NewPasswordValidationError {
   String text() {
     switch (this) {
       case NewPasswordValidationError.invalid:
-        return 'New Invalid password';
+        return 'New Invalid password, must be at least 8 characters';
       case NewPasswordValidationError.empty:
         return 'New Password is required';
     }

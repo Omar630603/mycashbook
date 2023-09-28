@@ -57,7 +57,7 @@ class MainApp extends StatelessWidget {
               dataService: dataService,
             ),
         '/history': (context) => HistoryScreen(dataService: dataService),
-        '/settings': (context) => SettingScreen(),
+        '/settings': (context) => SettingScreen(authService: authService),
       },
     );
   }

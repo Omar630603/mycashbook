@@ -22,4 +22,13 @@ class DataService {
   Future<List<Transaction>> getTransactions() async {
     return await _databaseHelper.getTransactions();
   }
+
+  Future<bool> deleteTransaction(int id) async {
+    try {
+      await _databaseHelper.deleteTransaction(id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
