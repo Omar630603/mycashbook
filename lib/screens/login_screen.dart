@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton(
                     key: const Key('loginForm_submit'),
                     onPressed: _onSubmit,
-                    child: const Text('Submit'),
+                    child: const Text('Login'),
                   ),
               ],
             ),

@@ -40,7 +40,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/home',
+              (route) => false,
+            );
           },
           icon: const Icon(Icons.home),
         ),
@@ -120,13 +123,19 @@ class TransactionItem extends StatelessWidget {
         child: Dismissible(
           key: Key(description),
           background: Container(
-            color: Colors.red,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.red,
+            ),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(left: 20),
             child: const Icon(Icons.delete, color: Colors.white),
           ),
           secondaryBackground: Container(
-            color: Colors.blue,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.blue,
+            ),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
             child: const Icon(Icons.edit, color: Colors.white),

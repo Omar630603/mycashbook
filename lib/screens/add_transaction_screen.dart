@@ -155,7 +155,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/home',
+              (route) => false,
+            );
           },
           icon: const Icon(Icons.home),
         ),
@@ -199,7 +202,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       firstDate: DateTime(2015),
                       lastDate: DateTime(2100),
                     );
-
                     if (pickedDate != null) {
                       String formattedDate =
                           DateFormat('dd MMM yyyy').format(pickedDate);
@@ -261,7 +263,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       ElevatedButton(
                         key: const Key('addTransactionForm_submit'),
                         onPressed: onSubmit,
-                        child: const Text('Submit'),
+                        child: const Text(' Add '),
                       ),
                     ElevatedButton(
                       onPressed: _state.status.isInProgress ? null : _resetForm,
@@ -270,7 +272,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           Colors.redAccent,
                         ),
                       ),
-                      child: const Text(' Reset '),
+                      child: const Text('Reset'),
                     ),
                   ],
                 )

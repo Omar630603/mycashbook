@@ -107,7 +107,10 @@ class _SettingScreenState extends State<SettingScreen> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/home',
+              (route) => false,
+            );
           },
           icon: const Icon(Icons.home),
         ),
@@ -165,7 +168,7 @@ class _SettingScreenState extends State<SettingScreen> {
                       ElevatedButton(
                         key: const Key('changePasswordForm_submit'),
                         onPressed: _onSubmit,
-                        child: const Text('Submit'),
+                        child: const Text('Change Password'),
                       ),
                   ],
                 ),
@@ -189,7 +192,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        'This application was developed by\n'
+                        'Developed by:\n'
                         'Name: Omar Abdul-Raoof Taha Ghaleb Al-Maktary\n'
                         'NIM: 1941720237\n'
                         'Class: TI-4H\n'

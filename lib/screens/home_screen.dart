@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _summaryContainer(List<Transaction> transactions) {
     double totalIncome = 0.0;
     double totalExpense = 0.0;
+    double totalBalance = 0.0;
 
     for (final transaction in transactions) {
       if (transaction.type == 'Income') {
@@ -135,6 +136,8 @@ class _HomeScreenState extends State<HomeScreen> {
         totalExpense += transaction.amount;
       }
     }
+
+    totalBalance = totalIncome - totalExpense;
 
     String totalIncomeString = NumberFormat.currency(
       locale: 'id',
@@ -146,6 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
       symbol: 'Rp. ',
       decimalDigits: 0,
     ).format(totalExpense);
+    String totalBalanceString = NumberFormat.currency(
+      locale: 'id',
+      symbol: 'Rp. ',
+      decimalDigits: 0,
+    ).format(totalBalance);
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -168,35 +176,115 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Total Income',
+                'Summary',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                totalIncomeString,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Income',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              totalIncomeString,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        const CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.green,
+                          child: Icon(
+                            Icons.arrow_upward,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Total Balance',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          totalBalanceString,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Total Expense',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                totalExpenseString,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Expense',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              totalExpenseString,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        const CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.red,
+                          child: Icon(
+                            Icons.arrow_downward,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -241,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: AspectRatio(
-            aspectRatio: 2,
+            aspectRatio: 1.5,
             child: LineChart(
               LineChartData(
                 lineTouchData: LineTouchData(
@@ -279,43 +367,43 @@ class _HomeScreenState extends State<HomeScreen> {
                             .colorScheme
                             .primary
                             .withOpacity(0.2),
-                        width: 4),
+                        width: 2),
                     left: BorderSide(
                         color: Theme.of(context)
                             .colorScheme
                             .primary
                             .withOpacity(0.2),
-                        width: 4),
+                        width: 2),
                     right: BorderSide(
                         color: Theme.of(context)
                             .colorScheme
                             .primary
                             .withOpacity(0.2),
-                        width: 4),
+                        width: 2),
                     top: BorderSide(
                         color: Theme.of(context)
                             .colorScheme
                             .primary
                             .withOpacity(0.2),
-                        width: 4),
+                        width: 2),
                   ),
                 ),
                 lineBarsData: [
                   LineChartBarData(
                     isCurved: true,
                     color: Colors.green,
-                    barWidth: 8,
+                    barWidth: 4,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(show: false),
                     spots: incomeSpots,
                   ),
                   LineChartBarData(
                     isCurved: true,
                     color: Colors.pink,
-                    barWidth: 8,
+                    barWidth: 4,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: false,
                       color: Colors.pink.withOpacity(0),
@@ -339,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
-      fontSize: 8,
+      fontSize: 7,
     );
     Widget text;
 
@@ -362,7 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget leftTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       fontWeight: FontWeight.bold,
-      fontSize: 8,
+      fontSize: 7,
     );
     String text;
 
@@ -391,8 +479,11 @@ class _HomeScreenState extends State<HomeScreen> {
         decimalDigits: 0,
       ).format(value);
     }
-
-    return Text(text, style: style, textAlign: TextAlign.center);
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      space: 5,
+      child: Text(text, style: style, textAlign: TextAlign.center),
+    );
   }
 
   double _getMaxX(List<Transaction> transactions) {
@@ -402,6 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
         max = transaction.date.millisecondsSinceEpoch.toDouble();
       }
     }
+    max = max + 86400000;
     return max;
   }
 
@@ -412,6 +504,8 @@ class _HomeScreenState extends State<HomeScreen> {
         min = transaction.date.millisecondsSinceEpoch.toDouble();
       }
     }
+
+    min = min - 86400000;
     return min;
   }
 
@@ -422,6 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
         max = transaction.amount.toDouble();
       }
     }
+    max = max + 100000;
     return max;
   }
 
@@ -431,6 +526,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (transaction.amount.toDouble() < min) {
         min = transaction.amount.toDouble();
       }
+    }
+
+    min = min - 100000;
+    if (min == double.infinity) {
+      min = 0;
     }
     return min;
   }
