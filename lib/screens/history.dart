@@ -349,7 +349,7 @@ class TransactionItem extends StatelessWidget {
 
                                 if (isDone) {
                                   Navigator.of(context).pushNamedAndRemoveUntil(
-                                    '/history',
+                                    '/home',
                                     (route) => false,
                                   );
                                 } else {
