@@ -1,7 +1,7 @@
 import 'package:bcrypt/bcrypt.dart';
 import 'package:mycashbook/models/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mycashbook/db/database.dart'; // Import the database file
+import 'package:mycashbook/db/database.dart';
 
 class AuthenticationService {
   final HiveDatabaseHelper _databaseHelper;
@@ -9,20 +9,16 @@ class AuthenticationService {
   AuthenticationService(this._databaseHelper);
 
   Future<bool> login(String username, String password) async {
-    final user = await _databaseHelper
-        .getUser(username); // Use _getUser from the database
+    final user = await _databaseHelper.getUser(username);
 
     if (user != null && BCrypt.checkpw(password, user.password)) {
-      // Store the user's token or session information
-      // For simplicity, we're using a boolean to track login status
       await _storeUserLoginStatus(true, user.username);
-      return true; // Login successful
+      return true;
     }
 
-    return false; // Login failed
+    return false;
   }
 
-  // get the current user
   Future<User?> getCurrentUser() async {
     final preferences = await SharedPreferences.getInstance();
     final isLoggedIn = preferences.getBool('mycashbook.isLoggedIn') ?? false;
@@ -51,7 +47,6 @@ class AuthenticationService {
   }
 
   Future<void> logout() async {
-    // Clear the user's token or session information
     await _storeUserLoginStatus(false, '');
   }
 

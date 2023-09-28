@@ -197,7 +197,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   textInputAction: TextInputAction.done,
                   onTap: () async {
                     DateTime? pickedDate = await showDatePicker(
-                      context: context, //context of current state
+                      context: context,
                       initialDate: DateTime.now(),
                       firstDate: DateTime(2015),
                       lastDate: DateTime(2100),

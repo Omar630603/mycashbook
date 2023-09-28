@@ -16,6 +16,7 @@ class HiveDatabaseHelper {
     final box = await Hive.openBox<User>(_userBoxName);
     if (box.isEmpty) {
       // Load user data from environment variables
+
       // final usernameFromEnv = dotenv.env['USERNAME'] ?? 'defaultUser';
       // final passwordFromEnv = dotenv.env['PASSWORD'] ?? 'defaultPassword';
 
@@ -75,6 +76,16 @@ class HiveDatabaseHelper {
     if (transactions.isNotEmpty) {
       final int index = box.values.toList().indexOf(transactions.first);
       await box.deleteAt(index);
+    }
+  }
+
+  Future<void> updateTransaction(Transaction transaction) async {
+    final box = await Hive.openBox<Transaction>(_transactionBoxName);
+    final transactions =
+        box.values.where((transaction) => transaction.id == transaction.id);
+    if (transactions.isNotEmpty) {
+      final int index = box.values.toList().indexOf(transactions.first);
+      await box.putAt(index, transaction);
     }
   }
 

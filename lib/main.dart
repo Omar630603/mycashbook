@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mycashbook/screens/history.dart';
 import 'package:mycashbook/screens/home_screen.dart';
 import 'package:mycashbook/screens/login_screen.dart';
@@ -8,6 +7,7 @@ import 'package:mycashbook/screens/setting_screen.dart';
 import 'package:mycashbook/services/authentication_service.dart';
 import 'package:mycashbook/db/database.dart';
 import 'package:mycashbook/services/data_service.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +44,7 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'My Cash Book',
       theme: ThemeData(
-        primarySwatch: Colors.yellow,
+        primarySwatch: Colors.blue,
       ),
       initialRoute: '/',
       routes: {

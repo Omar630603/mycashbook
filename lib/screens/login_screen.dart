@@ -54,7 +54,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final loginResult = await widget.authService.login(username, password);
 
       if (loginResult) {
-        // Login successful
         _state = _state.copyWith(status: FormzSubmissionStatus.success);
 
         FocusScope.of(context)
@@ -76,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false,
         );
       } else {
-        // Login failed
         _state = _state.copyWith(status: FormzSubmissionStatus.failure);
 
         const failureSnackBar = SnackBar(
@@ -142,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
             key: _key,
             child: Column(
               children: [
-                // app logo
                 Image.asset(
                   'assets/images/logo.png',
                   width: 100,

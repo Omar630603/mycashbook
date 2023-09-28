@@ -31,4 +31,21 @@ class DataService {
       return false;
     }
   }
+
+  Future<bool> updateTransaction(int id, DateTime date, int amount,
+      String description, String type) async {
+    try {
+      final transaction = Transaction(
+        id: id,
+        date: date,
+        amount: amount,
+        description: description,
+        type: type,
+      );
+      await _databaseHelper.updateTransaction(transaction);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
